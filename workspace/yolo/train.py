@@ -49,8 +49,10 @@
 # Configuration file for the wound-test project
 from configuration import config
 
+# Imports for argument parsing
+import os, sys, argparse
+
 # Imports for annotation parsing from XML files
-import os
 from tqdm.auto import tqdm
 import xml.etree.ElementTree as ET
 
@@ -63,6 +65,70 @@ import keras_cv
 import matplotlib.pyplot as plt
 import numpy as np
 
+########################################################################################################################
+##
+## Argument parsing
+##
+## Construct an argument parser, parses the arguments and sets the configuration parameters for 
+## the model training accordingly.
+##
+########################################################################################################################
+
+ap = argparse.ArgumentParser()
+ap.add_argument(
+    "-i", 
+    "--input", 
+    required=False,
+	help="Path to dataset directory. Default is set to ./dataset/labelled"
+)
+ap.add_argument(
+    "-o", 
+    "--output", 
+    required=False,
+	help="Path to output directory. Default is set to ./output"
+)
+ap.add_argument(
+    "--model-backbone", 
+    required=False,
+	help="Specifies the model backboe used. Default is set to yolo_v8_m_backbone_coco,"
+)
+ap.add_argument(
+    "--batch-size", 
+    required=False,
+	help="Batch size for training. Default is set to 16"
+)
+ap.add_argument(
+    "--epochs",
+    required=False,
+	help="Number of epochs for training. Default is set to 5000"
+)
+
+try:
+    args = vars(ap.parse_args())
+except:
+    ap.print_help()
+    sys.exit(0)
+
+# Set the dataset path
+if args["input"]:
+    config.DATASET_PATH = args["input"]
+if args["output"]:
+    config.BASE_OUTPUT = args["output"]
+if args["model_backbone"]:
+    if args["model_backbone"] in config.AVAILABLE_BACKBONES:
+        config.MODEL_BACKBONE = args["model_backbone"]
+    else:
+        print(f"Model backbone {args['model_backbone']} not available. Using default yolo_v8_m_backbone_coco")
+if args["batch_size"]:
+    config.BATCH_SIZE = int(args["batch_size"])
+if args["epochs"]:
+    config.NUM_EPOCHS = int(args["epochs"])
+
+# Create folder structure if not existing
+if not os.path.exists(config.BASE_OUTPUT):
+    os.makedirs(config.BASE_OUTPUT)
+if not os.path.exists(config.PLOTS_PATH):
+    os.makedirs(config.PLOTS_PATH)
 
 ########################################################################################################################
 ##
@@ -403,6 +469,9 @@ bounding boxes but also considers the difference in aspect ratio, center distanc
 box size. Together, these loss functions help optimize the model for object detection by
 minimizing the difference between the predicted and ground truth class probabilities and
 bounding boxes.
+
+For more specific settings consult the KerasCV documentation on the 
+[Adam optimizer](https://www.tensorflow.org/api_docs/python/tf/keras/optimizers/Adam)
 """
 optimizer = tf.keras.optimizers.Adam(
     learning_rate=config.LEARNING_RATE,

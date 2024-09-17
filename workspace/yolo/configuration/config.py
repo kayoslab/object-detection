@@ -58,6 +58,18 @@ YOLOV8 Backbones available in KerasCV:
     2.   yolo_v8_xl_backbone_coco
 """
 MODEL_BACKBONE = "yolo_v8_m_backbone_coco" 
+AVAILABLE_BACKBONES = [
+    "yolo_v8_xs_backbone",
+    "yolo_v8_s_backbone",
+    "yolo_v8_m_backbone",
+    "yolo_v8_l_backbone",
+    "yolo_v8_xl_backbone",
+    "yolo_v8_xs_backbone_coco",
+    "yolo_v8_s_backbone_coco",
+    "yolo_v8_m_backbone_coco",
+    "yolo_v8_l_backbone_coco",
+    "yolo_v8_xl_backbone_coco",
+]
 
 """
 A specification of the depth of the CSP blocks in the Feature Pyramid Network.
@@ -66,7 +78,22 @@ We recommend using 3 for "yolo_v8_l_backbone" and "yolo_v8_xl_backbone".
 
 Defaults to 2.
 """
-FPN_DEPTH = 2
+def calculate_preferred_fpn_depth(backbone):
+    if backbone.startswith("yolo_v8_xs"):
+        return 1
+    elif backbone.startswith("yolo_v8_s"):
+        return 2
+    elif backbone.startswith("yolo_v8_m"):
+        return 2
+    elif backbone.startswith("yolo_v8_l"):
+        return 3
+    elif backbone.startswith("yolo_v8_xl"):
+        return 3
+    else:
+        return 2
+
+
+FPN_DEPTH = calculate_preferred_fpn_depth(MODEL_BACKBONE)
 
 ###########################################################################
 ##
