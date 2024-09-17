@@ -247,7 +247,7 @@ def load_image(image_path):
         image (Tensor): A Tensor of type uint8.
     """
     image = tf.io.read_file(image_path)
-    image = tf.image.decode_jpeg(image, channels=3)
+    image = tf.image.decode_png(image, channels=3)
     return image
 
 
@@ -269,7 +269,10 @@ def load_dataset(image_path, classes, bbox):
         "classes": tf.cast(classes, dtype=tf.float32),
         "boxes": bbox,
     }
-    return {"images": tf.cast(image, tf.float32), "bounding_boxes": bounding_boxes}
+    return {
+        "images": tf.cast(image, tf.float32),
+        "bounding_boxes": bounding_boxes
+    }
 
 """
 ## Data Augmentation
@@ -297,12 +300,12 @@ augmenter = keras.Sequential(
     layers=[
         keras_cv.layers.RandomFlip(
             mode="horizontal",
-            bounding_box_format="xyxy"
+            bounding_box_format=config.BOUNDING_BOX_FORMAT
         ),
         keras_cv.layers.RandomShear(
             x_factor=0.2, 
             y_factor=0.2, 
-            bounding_box_format="xyxy"
+            bounding_box_format=config.BOUNDING_BOX_FORMAT
         ),
         keras_cv.layers.JitteredResize(
             target_size = (
@@ -313,7 +316,7 @@ augmenter = keras.Sequential(
                 0.75, 
                 1.3
             ), 
-            bounding_box_format = "xyxy"
+            bounding_box_format = config.BOUNDING_BOX_FORMAT
         ),
     ]
 )
@@ -334,7 +337,7 @@ resizing = keras_cv.layers.JitteredResize(
         0.75, 
         1.3
     ),
-    bounding_box_format="xyxy",
+    bounding_box_format=config.BOUNDING_BOX_FORMAT,
 )
 
 val_ds = val_data.map(load_dataset, num_parallel_calls=tf.data.AUTOTUNE)
@@ -377,10 +380,10 @@ dataset, and a finally, the feature pyramid network (FPN) depth is specified by 
 `fpn_depth` argument.
 """
 yolo = keras_cv.models.YOLOV8Detector(
-    num_classes=len(class_mapping),
-    bounding_box_format="xyxy",
     backbone=backbone,
-    fpn_depth=1,
+    num_classes=len(class_mapping),
+    bounding_box_format=config.BOUNDING_BOX_FORMAT,
+    fpn_depth=config.FPN_DEPTH,
 )
 
 """
@@ -407,7 +410,10 @@ optimizer = tf.keras.optimizers.Adam(
 )
 
 yolo.compile(
-    optimizer=optimizer, classification_loss="binary_crossentropy", box_loss="ciou"
+    classification_loss="binary_crossentropy",
+    box_loss="ciou",
+    optimizer=optimizer,
+    jit_compile=False,
 )
 
 ########################################################################################################################
@@ -430,7 +436,7 @@ class EvaluateCOCOMetricsCallback(keras.callbacks.Callback):
         super().__init__()
         self.data = data
         self.metrics = keras_cv.metrics.BoxCOCOMetrics(
-            bounding_box_format="xyxy",
+            bounding_box_format=config.BOUNDING_BOX_FORMAT,
             evaluate_freq=1e9,
         )
 
@@ -448,7 +454,7 @@ class EvaluateCOCOMetricsCallback(keras.callbacks.Callback):
         logs.update(metrics)
 
         current_map = metrics["MaP"]
-        if current_map > self.best_map:
+        if current_map >= self.best_map:
             self.best_map = current_map
             self.model.save(self.save_path)
 
@@ -457,14 +463,16 @@ class EvaluateCOCOMetricsCallback(keras.callbacks.Callback):
 # Train the model on the training dataset and evaluate it on the validation dataset
 H = yolo.fit(
     train_ds,
-    validation_data=val_ds,
     epochs=config.NUM_EPOCHS,
+    validation_data=val_ds,
+    shuffle=True,
     callbacks=[
         EvaluateCOCOMetricsCallback(
             val_ds,
             config.MODEL_PATH
         )
     ],
+    validation_freq=1,
 )
 
 # Print the model summary to get an overview of the model architecture and the number of parameters

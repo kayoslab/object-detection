@@ -179,7 +179,7 @@ resizing = keras_cv.layers.JitteredResize(
         0.75, 
         1.3
     ),
-    bounding_box_format="xyxy",
+    bounding_box_format=config.BOUNDING_BOX_FORMAT,
 )
 
 val_ds = data.map(load_dataset, num_parallel_calls=tf.data.AUTOTUNE)
@@ -203,7 +203,7 @@ val_ds = val_ds.prefetch(tf.data.AUTOTUNE)
 ##
 ########################################################################################################################
 
-def visualize_detections(model, dataset, bounding_box_format):
+def visualize_detections(model, dataset):
     """Visualizes the predictions made by the model on the dataset.
 
     Parameters
@@ -215,12 +215,12 @@ def visualize_detections(model, dataset, bounding_box_format):
     images, y_true = next(iter(dataset.take(10)))
 
     model.prediction_decoder = keras_cv.layers.NonMaxSuppression(
-        bounding_box_format=bounding_box_format,
+        bounding_box_format=config.BOUNDING_BOX_FORMAT,
         from_logits=True,
         # Decrease the required threshold to make predictions get pruned out
-        iou_threshold=0.2,
+        iou_threshold=config.IOU_THRESHOLD,
         # Tune confidence threshold for predictions to pass NMS
-        confidence_threshold=0.7,
+        confidence_threshold=config.CONFIDENCE_THRESHOLD,
     )
 
     y_pred = model.predict(images)
@@ -228,7 +228,7 @@ def visualize_detections(model, dataset, bounding_box_format):
     visualization.plot_bounding_box_gallery(
         images,
         value_range=(0, 255),
-        bounding_box_format=bounding_box_format,
+        bounding_box_format=config.BOUNDING_BOX_FORMAT,
         y_true=y_true,
         y_pred=y_pred,
         scale=4,
@@ -241,4 +241,7 @@ def visualize_detections(model, dataset, bounding_box_format):
     )
 
 print("[INFO] Visualizing predictions...")
-visualize_detections(yolo, dataset=val_ds, bounding_box_format="xyxy")
+visualize_detections(
+    yolo,
+    dataset=val_ds
+)
