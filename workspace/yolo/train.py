@@ -530,7 +530,7 @@ class EvaluateCOCOMetricsCallback(keras.callbacks.Callback):
         return logs
 
 # Train the model on the training dataset and evaluate it on the validation dataset
-H = yolo.fit(
+history = yolo.fit(
     train_ds,
     epochs=config.NUM_EPOCHS,
     validation_data=val_ds,
@@ -556,41 +556,62 @@ yolo.summary()
 ##
 ########################################################################################################################
 
-# plot the total loss, label loss, and bounding box loss
-lossNames = ["loss", "class_loss", "box_loss"]
-N = np.arange(0, config.NUM_EPOCHS)
-plt.style.use("ggplot")
-(fig, ax) = plt.subplots(3, 1, figsize=(13, 13))
+def modelEvaluation(modelHistory):
+    # plot the total loss, label loss, and bounding box loss
+    lossNames = ["loss", "class_loss", "box_loss"]
+    stepsInEpoche = np.arange(0, config.NUM_EPOCHS)
+    plt.style.use("ggplot")
+    (fig, ax) = plt.subplots(3, 1, figsize=(13, 13))
 
-# loop over the loss names
-for (i, l) in enumerate(lossNames):
-	# plot the loss for both the training and validation data
-	title = "Loss for {}".format(l) if l != "loss" else "Total loss"
-	ax[i].set_title(title)
-	ax[i].set_xlabel("Epoch #")
-	ax[i].set_ylabel("Loss")
-	ax[i].plot(N, H.history[l], label=l)
-	ax[i].plot(N, H.history["val_" + l], label="val_" + l)
-	ax[i].legend()
+    # loop over the loss names
+    for (i, l) in enumerate(lossNames):
+        # plot the loss for both the training and validation data
+        title = "Loss for {}".format(l) if l != "loss" else "Total loss"
+        ax[i].set_title(title)
+        ax[i].set_xlabel("Epoch #")
+        ax[i].set_ylabel("Loss")
+        ax[i].plot(
+            stepsInEpoche,
+            modelHistory.history[l],
+            label=l
+        )
+        ax[i].plot(
+            stepsInEpoche,
+            modelHistory.history["val_" + l],
+            label="val_" + l
+        )
+        ax[i].legend()
 
-# save the losses figure and create a new figure for the accuracies
-plt.tight_layout()
-plotPath = os.path.sep.join([config.PLOTS_PATH, "losses.png"])
-plt.savefig(plotPath)
-plt.close()
+    # save the losses figure and create a new figure for the accuracies
+    plt.tight_layout()
+    plt.savefig(config.LOSSES_PATH)
+    plt.close()
 
-# create a new figure for the MaP
-plt.style.use("ggplot")
-plt.figure()
-plt.plot(N, H.history["MaP"], label="MaP")
-plt.plot(N, H.history["MaP@[IoU=50]"], label="MaP (IoU=50)")
-plt.plot(N, H.history["MaP@[IoU=75]"], label="MaP (IoU=75)")
-plt.title("Mean Average Precision")
-plt.xlabel("Epoch #")
-plt.ylabel("MaP")
-plt.legend(loc="lower left")
+    # create a new figure for the MaP
+    plt.style.use("ggplot")
+    plt.figure()
+    plt.plot(
+        stepsInEpoche,
+        modelHistory.history["MaP"],
+        label="MaP"
+    )
+    plt.plot(
+        stepsInEpoche,
+        modelHistory.history["MaP@[IoU=50]"],
+        label="MaP (IoU=50)"
+    )
+    plt.plot(
+        stepsInEpoche,
+        modelHistory.history["MaP@[IoU=75]"],
+        label="MaP (IoU=75)"
+    )
+    plt.title("Mean Average Precision")
+    plt.xlabel("Epoch #")
+    plt.ylabel("MaP")
+    plt.legend(loc="lower left")
 
-# save the MaP plot
-plotPath = os.path.sep.join([config.PLOTS_PATH, "map.png"])
-plt.savefig(plotPath)
-plt.close()
+    # save the MaP plot
+    plt.savefig(config.MAP_PATH)
+    plt.close()
+
+modelEvaluation(history)

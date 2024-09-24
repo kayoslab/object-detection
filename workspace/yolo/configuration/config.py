@@ -16,8 +16,10 @@ LABELLED_PATH = os.path.sep.join([DATASET_PATH, "labelled"])
 BASE_OUTPUT = "output"
 # define the path to the output model, label binarizer, plots output
 # directory, and testing image paths
-MODEL_PATH = os.path.sep.join([BASE_OUTPUT, "detector.keras"])
+MODEL_PATH = os.path.sep.join([BASE_OUTPUT, "model.keras"])
 PLOTS_PATH = os.path.sep.join([BASE_OUTPUT, "plots"])
+LOSSES_PATH = os.path.sep.join([PLOTS_PATH, "losses.png"])
+MAP_PATH = os.path.sep.join([PLOTS_PATH, "map.png"])
 
 ###########################################################################
 ##
